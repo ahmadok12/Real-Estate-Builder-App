@@ -14,15 +14,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-CoHgO4t7.js"></script>
+    <script type="module" crossorigin src="./assets/index-I7wj4SA0.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BnWwBWfh.css">
   </head>
   <body class="bg-[#F1F5F9] text-[#0F172A] antialiased select-none overscroll-none">
     <div id="root"></div>
     <script>
-      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+      // Clear any conflicting service workers from other projects on this domain
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var reg of registrations) {
+            reg.unregister();
+          }
         });
       }
     </script>
