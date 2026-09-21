@@ -1,0 +1,18 @@
+{
+  "name": "Burj Accounts | UAE Tower Finance",
+  "short_name": "BurjAccounts",
+  "description": "Mobile Accounting Management for UAE Real Estate Tower Construction & Sales",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F3",
+  "theme_color": "#FFFFFF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
