@@ -18,6 +18,7 @@ export const Tower3DCanvas: React.FC<Tower3DCanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const [hasWebGlError, setHasWebGlError] = useState(false);
 
   // References for Three.js cleanup and animation
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -32,6 +33,15 @@ export const Tower3DCanvas: React.FC<Tower3DCanvasProps> = ({
     const width = container.clientWidth || 380;
     const height = 440;
 
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    } catch (err) {
+      console.warn('WebGL is not available in this environment:', err);
+      setHasWebGlError(true);
+      return;
+    }
+
     // 1. Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -42,9 +52,6 @@ export const Tower3DCanvas: React.FC<Tower3DCanvasProps> = ({
     camera.position.set(24, 28, 30);
     camera.lookAt(0, 12, 0);
     cameraRef.current = camera;
-
-    // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -344,6 +351,18 @@ export const Tower3DCanvas: React.FC<Tower3DCanvasProps> = ({
     groupRef.current.rotation.y = 0;
     setIsAutoRotating(true);
   };
+
+  if (hasWebGlError) {
+    return (
+      <div className="w-full h-72 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-2 font-bold">
+          3D
+        </div>
+        <p className="text-xs font-bold text-slate-800">3D View Not Supported On This Browser</p>
+        <p className="text-[11px] text-slate-500 mt-1">Please use the 2D Facade or Unit Cards tab to inspect tower units.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full rounded-3xl overflow-hidden bg-[#FAF9F6] border border-slate-200/80 shadow-card">

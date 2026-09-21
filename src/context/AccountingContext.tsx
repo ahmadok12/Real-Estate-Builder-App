@@ -52,7 +52,7 @@ interface AccountingContextType {
     projectedProfitAed: number;
     projectedMarginPercent: number;
     realizedSoldProfitAed: number;
-    cashCoverageSurplusAed: number; // Buyer cash collected - Construction cost spent
+    cashCoverageSurplusAed: number;
     isCashFlowPositive: boolean;
 
     // Retentions & Taxes
@@ -74,118 +74,205 @@ interface AccountingContextType {
   exportAuditData: () => void;
 }
 
-const STORAGE_KEY = 'burj_accounts_state_v2';
+const STORAGE_KEY = 'burj_accounts_state_v3';
 
 const AccountingContext = createContext<AccountingContextType | undefined>(undefined);
 
 export const AccountingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [project, setProject] = useState<TowerProject>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_project`);
-    return saved ? JSON.parse(saved) : INITIAL_PROJECT;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_project`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...INITIAL_PROJECT, ...parsed };
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_PROJECT;
   });
 
   const [budgetCategories, setBudgetCategories] = useState<ConstructionBudgetCategory[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_budget`);
-    return saved ? JSON.parse(saved) : INITIAL_BUDGET_CATEGORIES;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_budget`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_BUDGET_CATEGORIES;
   });
 
   const [constructionExpenses, setConstructionExpenses] = useState<ConstructionExpense[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_expenses`);
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_expenses`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_EXPENSES;
   });
 
   const [units, setUnits] = useState<TowerUnit[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_units`);
-    return saved ? JSON.parse(saved) : generateSeedUnits();
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_units`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Ensure all units have allocatedCostAed and projectedProfitAed
+          return parsed.map((u: any) => {
+            const costRate = u.floor >= 31 ? 750 : u.floor >= 20 ? 620 : 600;
+            const allocatedCost = u.allocatedCostAed || Math.round((u.areaSqft || 800) * costRate);
+            const price = u.priceAed || 1500000;
+            const profit = u.projectedProfitAed !== undefined ? u.projectedProfitAed : (price - allocatedCost);
+            const margin = u.profitMarginPercent !== undefined ? u.profitMarginPercent : Math.round((profit / price) * 100);
+            return {
+              ...u,
+              allocatedCostAed: allocatedCost,
+              projectedProfitAed: profit,
+              profitMarginPercent: margin,
+              paymentPlan: Array.isArray(u.paymentPlan) ? u.paymentPlan : [],
+            };
+          });
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return generateSeedUnits();
   });
 
   const [milestones, setMilestones] = useState<ConstructionMilestone[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_milestones`);
-    return saved ? JSON.parse(saved) : INITIAL_MILESTONES;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_milestones`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_MILESTONES;
   });
 
   const [ipcs, setIpcs] = useState<ContractorIpc[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_ipcs`);
-    return saved ? JSON.parse(saved) : INITIAL_IPCS;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_ipcs`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_IPCS;
   });
 
   const [pdcs, setPdcs] = useState<PostDatedCheque[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_pdcs`);
-    return saved ? JSON.parse(saved) : INITIAL_PDCS;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_pdcs`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_PDCS;
   });
 
   const [transactions, setTransactions] = useState<FinancialTransaction[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_transactions`);
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_transactions`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_TRANSACTIONS;
   });
 
   // Sync state to LocalStorage
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_project`, JSON.stringify(project));
-    localStorage.setItem(`${STORAGE_KEY}_budget`, JSON.stringify(budgetCategories));
-    localStorage.setItem(`${STORAGE_KEY}_expenses`, JSON.stringify(constructionExpenses));
-    localStorage.setItem(`${STORAGE_KEY}_units`, JSON.stringify(units));
-    localStorage.setItem(`${STORAGE_KEY}_milestones`, JSON.stringify(milestones));
-    localStorage.setItem(`${STORAGE_KEY}_ipcs`, JSON.stringify(ipcs));
-    localStorage.setItem(`${STORAGE_KEY}_pdcs`, JSON.stringify(pdcs));
-    localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(transactions));
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_project`, JSON.stringify(project));
+      localStorage.setItem(`${STORAGE_KEY}_budget`, JSON.stringify(budgetCategories));
+      localStorage.setItem(`${STORAGE_KEY}_expenses`, JSON.stringify(constructionExpenses));
+      localStorage.setItem(`${STORAGE_KEY}_units`, JSON.stringify(units));
+      localStorage.setItem(`${STORAGE_KEY}_milestones`, JSON.stringify(milestones));
+      localStorage.setItem(`${STORAGE_KEY}_ipcs`, JSON.stringify(ipcs));
+      localStorage.setItem(`${STORAGE_KEY}_pdcs`, JSON.stringify(pdcs));
+      localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(transactions));
+    } catch {
+      // quota or private mode fallback
+    }
   }, [project, budgetCategories, constructionExpenses, units, milestones, ipcs, pdcs, transactions]);
 
-  // Computed Accounting KPIs (Cost Management vs Unit Sales Matching)
+  // Safely compute Accounting KPIs
   const stats = useMemo(() => {
+    const safeUnits = Array.isArray(units) ? units : [];
+    const safeBudgets = Array.isArray(budgetCategories) ? budgetCategories : [];
+    const safeIpcs = Array.isArray(ipcs) ? ipcs : [];
+    const safePdcs = Array.isArray(pdcs) ? pdcs : [];
+
     // 1. Sales Side
-    const soldUnits = units.filter(u => u.status === 'Sold' || u.status === 'HandedOver').length;
-    const reservedUnits = units.filter(u => u.status === 'Reserved').length;
-    const availableUnits = units.filter(u => u.status === 'Available').length;
+    const soldUnits = safeUnits.filter(u => u.status === 'Sold' || u.status === 'HandedOver').length;
+    const reservedUnits = safeUnits.filter(u => u.status === 'Reserved').length;
+    const availableUnits = safeUnits.filter(u => u.status === 'Available').length;
 
-    const salesGdvAed = project.gdvAed;
-    const salesSoldVolumeAed = units
+    const salesGdvAed = project?.gdvAed || 284500000;
+    const salesSoldVolumeAed = safeUnits
       .filter(u => u.status === 'Sold' || u.status === 'HandedOver' || u.status === 'Reserved')
-      .reduce((sum, u) => sum + u.priceAed, 0);
+      .reduce((sum, u) => sum + (u.priceAed || 0), 0);
 
-    const totalCollectedAed = units.reduce((sum, u) => sum + u.totalCollectedAed, 0);
+    const totalCollectedAed = safeUnits.reduce((sum, u) => sum + (u.totalCollectedAed || 0), 0);
     const totalReceivablesAed = Math.max(0, salesSoldVolumeAed - totalCollectedAed);
 
     // 2. Cost Side
-    const totalCostBudgetAed = budgetCategories.reduce((sum, b) => sum + b.budgetAed, 0);
-    const totalCostSpentAed = budgetCategories.reduce((sum, b) => sum + b.actualSpentAed, 0);
+    const totalCostBudgetAed = safeBudgets.reduce((sum, b) => sum + (b.budgetAed || 0), 0) || 152000000;
+    const totalCostSpentAed = safeBudgets.reduce((sum, b) => sum + (b.actualSpentAed || 0), 0);
     const costRemainingAed = Math.max(0, totalCostBudgetAed - totalCostSpentAed);
-    const costBurnPercent = Math.round((totalCostSpentAed / totalCostBudgetAed) * 100);
-    const avgCostPerSqftAed = Math.round(totalCostBudgetAed / project.totalBuiltAreaSqft);
+    const costBurnPercent = totalCostBudgetAed > 0 ? Math.round((totalCostSpentAed / totalCostBudgetAed) * 100) : 0;
+    const builtArea = project?.totalBuiltAreaSqft || 245000;
+    const avgCostPerSqftAed = builtArea > 0 ? Math.round(totalCostBudgetAed / builtArea) : 620;
 
-    // 3. Profit & Cashflow Matching (Cost vs Sales)
-    // Overall Tower Projected Profit: Total Sales GDV - Total Construction Cost Budget
+    // 3. Profit & Cashflow Matching
     const projectedProfitAed = salesGdvAed - totalCostBudgetAed;
-    const projectedMarginPercent = Math.round((projectedProfitAed / salesGdvAed) * 100);
+    const projectedMarginPercent = salesGdvAed > 0 ? Math.round((projectedProfitAed / salesGdvAed) * 100) : 0;
 
-    // Realized Profit on currently sold units
-    const realizedSoldProfitAed = units
+    const realizedSoldProfitAed = safeUnits
       .filter(u => u.status === 'Sold' || u.status === 'HandedOver')
-      .reduce((sum, u) => sum + u.projectedProfitAed, 0);
+      .reduce((sum, u) => sum + (u.projectedProfitAed || 0), 0);
 
-    // Cash Coverage: Are buyer cash collections covering current construction expenses?
     const cashCoverageSurplusAed = totalCollectedAed - totalCostSpentAed;
     const isCashFlowPositive = cashCoverageSurplusAed >= 0;
 
     // Retentions & Taxes
-    const paidIpcs = ipcs.filter(i => i.status === 'Paid');
-    const retentionLockedAed = paidIpcs.reduce((sum, i) => sum + i.retentionDeductionAed, 0);
-    const inputVatAed = paidIpcs.reduce((sum, i) => sum + i.vatAmountAed, 0);
+    const paidIpcs = safeIpcs.filter(i => i.status === 'Paid');
+    const retentionLockedAed = paidIpcs.reduce((sum, i) => sum + (i.retentionDeductionAed || 0), 0);
+    const inputVatAed = paidIpcs.reduce((sum, i) => sum + (i.vatAmountAed || 0), 0);
 
-    const pendingIpcClaimsAed = ipcs
+    const pendingIpcClaimsAed = safeIpcs
       .filter(i => i.status !== 'Paid')
-      .reduce((sum, i) => sum + i.netPayableAed, 0);
+      .reduce((sum, i) => sum + (i.netPayableAed || 0), 0);
 
-    const maturedPdcAed = pdcs
+    const maturedPdcAed = safePdcs
       .filter(p => p.status === 'Cleared')
-      .reduce((sum, p) => sum + p.amountAed, 0);
+      .reduce((sum, p) => sum + (p.amountAed || 0), 0);
 
-    const upcomingPdcAed = pdcs
+    const upcomingPdcAed = safePdcs
       .filter(p => p.status === 'In Hand' || p.status === 'Deposited')
-      .reduce((sum, p) => sum + p.amountAed, 0);
+      .reduce((sum, p) => sum + (p.amountAed || 0), 0);
 
     return {
-      totalUnits: units.length,
+      totalUnits: safeUnits.length,
       soldUnits,
       reservedUnits,
       availableUnits,
@@ -221,7 +308,6 @@ export const AccountingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setConstructionExpenses(prev => [newExpense, ...prev]);
 
-    // Update actual spent in the corresponding budget category
     setBudgetCategories(prev =>
       prev.map(cat => {
         if (cat.category === expenseData.category) {
@@ -234,13 +320,11 @@ export const AccountingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       })
     );
 
-    // Deduct from project Escrow balance
     setProject(p => ({
       ...p,
       escrowBalanceAed: Math.max(0, p.escrowBalanceAed - expenseData.amountAed),
     }));
 
-    // Record in transaction log
     const tx: FinancialTransaction = {
       id: `tx-${Date.now()}`,
       timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
@@ -277,7 +361,7 @@ export const AccountingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (u.id !== unitId) return u;
         unitNum = u.unitNumber;
         buyer = u.buyerName || 'Buyer';
-        const updatedPlan = u.paymentPlan.map(p => {
+        const updatedPlan = (u.paymentPlan || []).map(p => {
           if (p.id === installmentId && p.status !== 'Paid') {
             collectedAmount = p.amountAed;
             return {

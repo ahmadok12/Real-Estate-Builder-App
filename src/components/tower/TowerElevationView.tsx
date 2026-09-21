@@ -22,7 +22,7 @@ interface TowerElevationViewProps {
 export const TowerElevationView: React.FC<TowerElevationViewProps> = ({ onSelectUnit }) => {
   const { units, stats } = useAccounting();
 
-  const [viewMode, setViewMode] = useState<'3d' | '2d' | 'cards'>('3d');
+  const [viewMode, setViewMode] = useState<'3d' | '2d' | 'cards'>('2d');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Sold' | 'Partial' | 'Vacant'>('All');
   const [activeInspectedUnit, setActiveInspectedUnit] = useState<TowerUnit | null>(null);
 

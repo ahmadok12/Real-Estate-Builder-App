@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AccountingProvider } from './context/AccountingContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { MobileShell, TabType } from './components/layout/MobileShell';
 import { PulseView } from './components/dashboard/PulseView';
 import { TowerElevationView } from './components/tower/TowerElevationView';
@@ -75,8 +76,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AccountingProvider>
-      <AppContent />
-    </AccountingProvider>
+    <ErrorBoundary>
+      <AccountingProvider>
+        <AppContent />
+      </AccountingProvider>
+    </ErrorBoundary>
   );
 }
